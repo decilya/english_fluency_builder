@@ -111,7 +111,7 @@ data class AssessmentVerdict(
 class GetNextLearningTaskUseCase @Inject constructor(
     private val sequenceGenerator: ExerciseSequenceGenerator,
     private val linguisticRepository: LinguisticRepository,
-    private val proficiencyRepository: Proficiencyучебной задачи
+    private val proficiencyRepository: ProficiencyRepository,
 class ProcessUserResponseUseCase @Inject constructor(
     private val assessmentPolicy: PronunciationAssessmentPolicy,
     private val proficiencyRepository: ProficiencyRepository,
