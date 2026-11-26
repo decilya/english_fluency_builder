@@ -1,132 +1,90 @@
-# ТЕХНИЧЕСКОЕ ЗАДАНИЕ И АРХИТЕКТУРНЫЙ МАНИФЕСТ v2.0
-**Проект:** English Fluency Builder  
-**Статус:** APPROVED BASELINE  
+# Техническое задание и архитектурный манифест v2.0
+**Проект:** English Fluency Builder (Android pet project)  
 **Стек:** Kotlin, Android SDK, Jetpack Compose, Room, Hilt, Coroutines/Flow, FSRS-6  
 
-## 1. НАУЧНЫЙ БАЗИС И МЕТОДОЛОГИЯ ОБУЧЕНИЯ
+## 1. Научный базис и методология
 
-### 1.1. Фундаментальные принципы (Evidence-Based)
-Приложение не является "еще одной Anki". Оно строится на синтезе трех подтвержденных исследований:
-1) **Input Processing Theory (VanPatten):** Создание ментальной репрезентации происходит *только* через обработку meaning-bearing input. Output не создает новое знание, он консолидирует существующее.
-2) **Output Hypothesis (Swain):** Comprehensible input необходим, но недостаточен для развития грамматической точности и беглости. Pushed output выполняет уникальные когнитивные функции: noticing gap, syntactic processing, hypothesis testing.
-3) **Task-Based Language Teaching (TBLT):** Эффективность определяется качеством дизайна задач, а не фактом их использования. Задачи должны быть outcome-oriented с meaningful negotiation, а не form-focused drills.
+Приложение не является очередным клоном Anki. Оно опирается на три подтвержденных исследованиями принципа, адаптированных под мобильный формат:
 
-### 1.2. Ключевое архитектурное следствие: Session-Type Balance
-Метрика "70% output" применяется **дифференцированно**, а не глобально:
-1) **Introduction Session:** 80% Input / 20% Guided Output. Цель — создание ментальной репрезентации.
-2) **Practice Session:** 30% Input / 70% Output. Цель — консолидация и автоматизация.
-3) **Transfer Session:** 100% Output в новом контексте. Цель — проверка истинного владения.
+1. **Осмысленный входной материал (Input Processing):** Усвоение происходит только через понимание смысла в контексте. Простое заучивание без контекста не создает устойчивых связей.
+2. **Активное воспроизведение (Output Hypothesis):** Понимания недостаточно для беглости. Пользователь должен формулировать фразы сам, чтобы заметить пробелы в знаниях и проверить свои гипотезы о языке.
+3. **Обучение через задачи (TBLT):** Эффективность зависит от качества задачи. Упражнения должны быть ориентированы на результат (например, "ответь на вопрос в диалоге"), а не на механическую подстановку слов.
 
-SRS управляет переходом пользователя между типами сессий для каждой конкретной фразы.
+### Баланс типов сессий
+Правило "70% активного воспроизведения" применяется гибко, в зависимости от этапа изучения фразы:
+- **Введение:** 80% восприятие / 20% направляемое воспроизведение. Цель: понять смысл.
+- **Практика:** 30% восприятие / 70% активное воспроизведение. Цель: автоматизация.
+- **Перенос:** 100% активное воспроизведение в новом контексте. Цель: проверка реального владения.
 
-### 1.3. Таксономия учебных задач (4-Type Progression)
-Вместо generic "TaskScenario" используется строго определенная таксономия с нарастающей когнитивной нагрузкой:
+Алгоритм интервального повторения (SRS) управляет переходом фразы между этими этапами.
 
-| Тип задачи | Описание | Когнитивная нагрузка | Роль в SRS |
-| :--- | :--- | :--- | :--- |
-| **Recognition** | Выбор правильной фразы из 3 вариантов в диалоге | Low | Введение / Раннее повторение |
-| **Reconstruction** | Сборка фразы из блоков после прослушивания | Medium | Консолидация формы |
-| **Production** | Произнесение фразы в заданном контексте | High | Автоматизация |
-| **Transfer** | Использование фразы в *новом*, непредвиденном сценарии | Highest | Критерий "выучено" |
+### Типы учебных задач
+Вместо абстрактных "карточек" используется прогрессия из четырех типов задач с нарастающей сложностью:
+1. **Распознавание:** Выбор правильной фразы из вариантов в диалоге. (Низкая нагрузка, этап введения).
+2. **Сборка:** Составление фразы из блоков после прослушивания. (Средняя нагрузка, закрепление формы).
+3. **Воспроизведение:** Самостоятельное произнесение или ввод фразы в заданном контексте. (Высокая нагрузка, автоматизация).
+4. **Перенос:** Использование фразы в новом, непредвиденном сценарии. (Критерий полного усвоения).
 
-**Правило:** Фраза считается освоенной ("ProficiencyLevel.AUTOMATIC") только после успешного прохождения Transfer Task.
-
-### 1.4. Алгоритм интервального повторения
-1) **Базовый алгоритм:** FSRS-6 (Free Spaced Repetition Scheduler). Превосходит SM-2 по retention prediction accuracy, использует ML-моделирование memory state.
-2) **Context Variation Layer:** Надстройка *поверх* FSRS (не модификация самого алгоритма). При оценке "Again" из-за непонимания контекста система меняет *пример использования*, а не только интервал.
-3) **Card Format:** Только sentence/phrase cards с обязательным полем "context". Изолированные слова запрещены.
-4) **Decay Policy:** Фразы, не повторенные за N месяцев и имеющие низкий frequency score, архивируются (не удаляются). Активный набор ограничен для предотвращения cognitive overload.
+Фраза считается выученной только после успешного прохождения задачи типа "Перенос".
 
 ---
 
-## 2. ИНЖЕНЕРНЫЕ ПРИНЦИПЫ (NON-NEGOTIABLE)
+## 2. Инженерные принципы (адаптировано для пет-проекта)
 
-### 2.1. SOLID + TDD как аксиома
-1) **TDD:** Red-Green-Refactor. Тест пишется ДО продакшн-кода. Domain Layer — 100% branch coverage.
-2) **SRP:** Каждая класс имеет одну причину для изменения. Педагогическая логика != Лингвистическая модель != Инфраструктура.
-3) **OCP:** Расширение через абстракции. Новые типы задач/генераторов добавляются без модификации существующего кода.
-4) **LSP:** Подтипы полностью заменяемы. Контракты портов не нарушаются реализациями.
-5) **ISP:** Порты минимальны. Клиенты не зависят от неиспользуемых методов.
-6) **DIP:** Все зависимости на абстракциях. Конкретные реализации инжектируются через Hilt.
+Чтобы пет-проект не превратился в неподдерживаемый монолит, соблюдаются строгие, но разумные правила:
 
-### 2.2. Strict Clean Architecture
-Никаких упрощений. Dependency Rule соблюдается абсолютно.
-1) **Domain Layer:** Чистый Kotlin. Zero Android dependencies. Два Bounded Contexts (см. п. 3.1).
-2) **Application Layer:** Use Cases, orchestrating Domain BCs. Application-specific business rules.
-3) **Data Layer:** Repository implementations, Room DAO, mapping DTO <-> Domain.
-4) **Infrastructure Layer:** TTS, STT, FSRS adapter, JSON parsing, Android APIs.
-5) **Presentation Layer:** Jetpack Compose, ViewModels. Зависит только от Application (Use Cases).
-
-### 2.3. Domain-Driven Design Elements
-1) **Value Objects:** Неизменяемые, с валидацией при создании. Защищают инварианты.
-2) **Entities:** С идентичностью и жизненным циклом.
-3) **Domain Services:** Логика, не принадлежащая одной сущности.
-4) **Ubiquitous Language:** Код говорит на языке предметной области.
-
-### 2.4. Testing Strategy
-1) **Unit Tests:** JVM only. No Android Framework, no Robolectric. MockK/Fakes для портов.
-2) **Pedagogical Acceptance Tests (PAT):** Интеграционные сценарии, валидирующие *методику*, а не код. Пишутся совместно лингвистом и QA. Пример: "Given phrase X learned in context Y, When tested after Z days with Transfer task, Then retention > N%".
-3) **Contract Testing:** Для всех Infrastructure портов. Тесты прогоняются против Fake И Real implementation. Расхождение = fail build.
-4) **Integration Tests:** Room, Network, critical Infrastructure adapters.
+1. **TDD в домене:** Тесты пишутся до кода для бизнес-логики. Это компас: если тест написать сложно, архитектура переусложнена.
+2. **Чистая архитектура:** Строгое разделение слоев. Domain-слой не знает об Android, Room или Hilt.
+3. **Модульность вместо раздутого DDD:** Вместо тяжелых "ограниченных контекстов" (Bounded Contexts) используются два четких логических модуля в домене: Лингвистический и Педагогический. Это предотвращает смешивание данных о языке и данных о прогрессе пользователя.
+4. **Интерфейсы (порты) минимальны:** Инфраструктура (TTS, STT, FSRS) подключается через узкие интерфейсы, что позволяет легко писать фейки для тестов.
 
 ---
 
-## 3. АРХИТЕКТУРА DOMAIN LAYER (TWO BOUNDED CONTEXTS)
+## 3. Архитектура домена (два логических модуля)
 
-Педагогическая методика IS the business rule данного продукта. Она находится в Domain, но выделена в отдельный Bounded Context для соблюдения SRP.
-
-### 3.1. Linguistic Bounded Context
-Отвечает за *язык как систему*. Меняется при изменении лингвистических требований.
+### 3.1. Лингвистический модуль
+Отвечает за язык как систему. Меняется только при обновлении контента или правил языка.
 
 ```kotlin
-// Value Objects
 @JvmInline value class PhraseCanonical(val value: String)
 @JvmInline value class ContextId(val value: UUID)
 
 enum class Register { FORMAL, INFORMAL, NEUTRAL }
 enum class FrequencyBand { TOP_100, TOP_500, TOP_1000, RARE }
 
-// Entity
 data class LinguisticUnit(
     val id: UnitId,
     val canonical: PhraseCanonical,
-    val type: LinguisticType, // COLLOCATION, IDIOM, FRAME, PHRASAL_VERB
     val frequencyBand: FrequencyBand,
     val register: Register
 )
 
-// Value Object: Контекст использования (не строка!)
 data class UsageContext(
     val id: ContextId,
     val scenarioDescription: String,
     val exampleUtterance: PhraseCanonical,
-    val emotionalTone: Tone,
-    val sourceReference: String // "Friends S01E03", "COCA corpus"
+    val sourceReference: String // например, "Friends S01E03" или "COCA"
 )
 ```
 
-### 3.2. Pedagogical Bounded Context
-Отвечает за *процесс обучения*. Меняется при изменении методики.
+### 3.2. Педагогический модуль
+Отвечает за процесс обучения и прогресс пользователя.
 
 ```kotlin
-// Value Objects
 enum class TaskType { RECOGNITION, RECONSTRUCTION, PRODUCTION, TRANSFER }
 enum class ProficiencyLevel { NONE, PASSIVE, CONTROLLED, AUTOMATIC }
 
 @JvmInline value class AcceptanceThreshold(val value: Float) {
-    init { require(value in 0.0f..1.0f) { "Threshold must be 0..1" } }
+    init { require(value in 0.0f..1.0f) { "Порог должен быть от 0 до 1" } }
 }
 
-// Entity: Состояние владения конкретной фразой
 data class PhraseProficiency(
     val unitId: UnitId,
     val level: ProficiencyLevel,
-    val taskTypeProgress: Map<TaskType, TaskCompletionState>,
     val lastReviewAt: Instant
 )
 
-// Domain Service Interface: Политика оценки произношения
-// WHAT оценивается, а не HOW
+// Интерфейс политики оценки: определяет, ЧТО считать правильным, а не КАК это считать
 interface PronunciationAssessmentPolicy {
     fun assess(
         spoken: RawTranscript, 
@@ -137,57 +95,23 @@ interface PronunciationAssessmentPolicy {
 
 data class AssessmentVerdict(
     val isAccepted: Boolean,
-    val confidenceScore: Float,
     val feedbackType: FeedbackType // PERFECT, CLOSE, RETRY, LISTEN_AGAIN
 )
-
-// Domain Service Interface: Генератор последовательности упражнений
-interface ExerciseSequenceGenerator {
-    fun nextTaskFor(
-        proficiency: PhraseProficiency,
-        availableContexts: List<UsageContext>
-    ): LearningTask
-}
 ```
 
-### 3.3. Разделение ответственности: Assessment Policy vs Algorithm
-
-| Компонент | Слой | Ответственность |
-| :--- | :--- | :--- |
-| `PronunciationAssessmentPolicy` | Domain (Pedagogical BC) | *Что* считать правильным. Пороги, типы обратной связи. |
-| `LevenshteinPronunciationAssessor` | Infrastructure | *Как* сравнивать строки (алгоритм Левенштейна). |
-| `MlBasedPronunciationAssessor` | Infrastructure | *Как* сравнивать через ML-модель. |
-| `AcceptanceThreshold` | Domain (Value Object) | Конфигурируемый порог. Загружается из remote config для A/B тестов. |
+**Важное разделение:** `PronunciationAssessmentPolicy` живет в домене и задает правила (например, "допускается 1 ошибка в окончании"). Конкретный алгоритм (Левенштейн или ML-модель) живет в инфраструктуре и реализует этот интерфейс.
 
 ---
 
-## 4. АРХИТЕКТУРА APPLICATION LAYER
+## 4. Слой приложения (Use Cases)
 
-Orchestrates взаимодействие двух Bounded Contexts. Содержит application-specific business rules.
+Координирует работу двух модулей домена.
 
 ```kotlin
-// Use Case: Получение следующего упражнения
 class GetNextLearningTaskUseCase @Inject constructor(
     private val sequenceGenerator: ExerciseSequenceGenerator,
     private val linguisticRepository: LinguisticRepository,
-    private val proficiencyRepository: ProficiencyRepository,
-    private val fsrsScheduler: FsrsSchedulerPort
-) {
-    suspend operator fun invoke(sessionType: SessionType): Result<LearningTask> {
-        val dueUnits = proficiencyRepository.getDueForSession(sessionType)
-        if (dueUnits.isEmpty()) return Result.success(LearningTask.SessionComplete)
-        
-        val unit = dueUnits.first()
-        val contexts = linguisticRepository.getContextsFor(unit.id)
-        val proficiency = proficiencyRepository.getProficiency(unit.id)
-        
-        return Result.success(
-            sequenceGenerator.nextTaskFor(proficiency, contexts)
-        )
-    }
-}
-
-// Use Case: Обработка ответа пользователя
+    private val proficiencyRepository: Proficiencyучебной задачи
 class ProcessUserResponseUseCase @Inject constructor(
     private val assessmentPolicy: PronunciationAssessmentPolicy,
     private val proficiencyRepository: ProficiencyRepository,
@@ -198,59 +122,35 @@ class ProcessUserResponseUseCase @Inject constructor(
         taskId: TaskId,
         response: UserResponse
     ): Result<ProcessingResult> {
-        // 1) Оценка (Domain Policy, не алгоритм!)
+        // 1. Оценка ответа согласно доменной политике
         val verdict = when (response) {
             is SpokenResponse -> assessmentPolicy.assess(
                 response.transcript, response.expectedPhrase, response.threshold
             )
-            else -> /* оценка других типов ответов */
+            else -> /* логика для других типов ответов */
         }
         
-        // 2) Обновление SRS (FSRS + Context Variation)
+        // 2. Планирование следующего повторения (FSRS + вариация контекста при ошибке)
         val schedulingDecision = if (!verdict.isAccepted && verdict.feedbackType == FeedbackType.LISTEN_AGAIN) {
             contextVariationService.suggestAlternativeContext(taskId)
         } else {
             fsrsScheduler.schedule(taskId, verdict.toFsrsRating())
         }
         
-        // 3) Обновление proficiency
+        // 3. Сохранение прогресса
         proficiencyRepository.updateAfterTask(taskId, verdict, schedulingDecision)
         
         return Result.success(ProcessingResult(verdict, schedulingDecision))
-    }
-}
-```
+ a: TTS, STT, FSRS
 
----
-
-## 5. INFRASTRUCTURE LAYER KEY COMPONENTS
-
-### 5.1. Speech Synthesis (TTS)
 ```kotlin
-// Domain Port
+// Порт для синтеза речи
 interface SpeechSynthesizer {
     suspend fun speak(text: PhraseCanonical, language: Language): Result<Unit>
     suspend fun stop(): Result<Unit>
 }
 
-// Infrastructure Implementation
-class AndroidSpeechSynthesizer @Inject constructor(
-    @ApplicationContext private val context: Context
-) : SpeechSynthesizer { /* ... */ }
-
-// Test Double
-class FakeSpeechSynthesizer : SpeechSynthesizer {
-    val spokenPhrases = mutableListOf<PhraseCanonical>()
-    override suspend fun speak(text: PhraseCanonical, language: Language): Result<Unit> {
-        spokenPhrases.add(text)
-        return Result.success(Unit)
-    }
-}
-```
-
-### 5.2. Speech Recognition (STT)
-```kotlin
-// Domain Port: Возвращает сырой результат, НЕ оценивает
+// Порт для распознавания речи (возвращает сырой текст, не оценивает его)
 interface SpeechRecognizer {
     suspend fun recognize(language: Language): Result<RawTranscript>
 }
@@ -258,106 +158,50 @@ interface SpeechRecognizer {
 data class RawTranscript(val text: String, val confidence: Float)
 ```
 
-### 5.3. FSRS Adapter
-```kotlin
-// Domain Port
-interface FsrsSchedulerPort {
-    fun schedule(cardId: CardId, rating: FsrsRating): SchedulingDecision
-    fun getDueCards(now: Instant): List<CardId>
-}
+---
 
-// Infrastructure: Обертка над open-spaced-repetition/fsrs-rs-ffi или Kotlin port
-class FsrsSchedulerAdapter @Inject constructor(
-    private val fsrsModel: FsrsModel // загружается из assets/config
-) : FsrsSchedulerPort { /* ... */ }
-```
+## 6. Контентная стратегия
+
+1. **Источники:** Топ-200 коллокаций, топ-50 живых идиом, топ-80 фразовых глаголов (по данным корпусов COCA/BNC).
+2. **Структура карточки (обязательные поля):**
+   - Целевая фраза (`canonical`).
+   - Частотность и регистр использования.
+   - Минимум 3 разных `UsageContext` для одной фразы (для вариативности при ошибках).
+   - Ссылка на источник контекста.
+3. **Запрещено:** Изолированные слова без контекста, устаревшие идиомы, грамматические правила в виде текста, фразы с единственным примером использования.
 
 ---
 
-## 6. КОНТЕНТНАЯ СТРАТЕГИЯ
+## 7. Этапы разработки (Roadmap для соло-разработчика)
 
-### 6.1. Источники и объем
-1) **Коллокации:** Top 200 частотных (COCA/BNC corpus)
-2) **Идиомы:** Top 50 живых, подтвержденных корпусными данными
-3) **Фразовые глаголы:** Top 80 наиболее употребимых
-4) **Речевые фреймы:** 50 conversational frames для B1-C1
-5) **Контексты:** Минимум 3 различных UsageContext на каждую фразу (для Context Variation Layer)
-
-### 6.2. Структура карточки (Обязательные поля)
-Каждая "LinguisticUnit" ОБЯЗАНА иметь:
-1) "canonical": Целевая фраза
-2) "frequencyBand": Частотность (определяет приоритет и decay)
-3) "register": Регистр использования
-4) >= 3 "UsageContext" с разными сценариями
-5) "sourceReference": Источник каждого контекста
-
-### 6.3. Запрещенный контент
-1) Изолированные слова без контекста
-2) Устаревшие/книжные идиомы без корпусного подтверждения
-3) Грамматические правила в виде текста
-4) Фразы с единственным примером использования
+- **Фаза 0: Фундамент (Недели 1-2).** Настройка модулей Gradle, CI (lint, detekt, тесты), базовые value-классы, интеграция FSRS-6.
+- **Фаза 1: Ядро домена (Недели 3-5).** Генератор последовательностей задач, политика оценки произношения, Use Cases. Покрытие домена тестами. Создание Fake-реализаций портов.
+- **Фаза 2: Данные и инфраструктура (Недели 6-8).** Схема Room, маппинг, адаптеры Android TTS/STT, загрузчик начальных данных из JSON с валидацией.
+- **Фаза 3: Интерфейс MVP (Недели 9-12).** Навигация Compose, экраны для 4 типов задач, ежедневный поток занятий.
+- **Фаза 4: Валидация (Недели 13-15).** Тестирование на реальных пользователях, настройка порогов распознавания речи, профилирование производительности.
 
 ---
 
-## 7. ЭТАПЫ РАЗРАБОТКИ (ROADMAP)
+## 8. Риски и способы их снижения
 
-### Phase 0: Foundation (Weeks 1-2)
-1) Gradle KTS multi-module setup (domain-linguistic, domain-pedagogical, application, data, infrastructure, presentation)
-2) CI pipeline: lint, detekt, unit tests, contract tests, build
-3) Базовые Value Objects + TDD
-4) FSRS-6 integration + adapter + TDD
-
-### Phase 1: Core Domain (Weeks 3-5)
-1) "ExerciseSequenceGenerator" + все 4 типа задач + TDD
-2) "PronunciationAssessmentPolicy" + TDD (edge cases, threshold behavior)
-3) "GetNextLearningTaskUseCase", "ProcessUserResponseUseCase" + TDD
-4) Pedagogical Acceptance Tests (совместно с лингвистом)
-5) Fake implementations всех портов + Contract Tests
-
-### Phase 2: Data & Infrastructure (Weeks 6-8)
-1) Room schema + migrations + integration tests
-2) Repository implementations + mapping
-3) Android TTS/STT adapters + Contract Tests
-4) Seed data loader (JSON -> DB) + validation
-
-### Phase 3: Presentation MVP (Weeks 9-12)
-1) Navigation (Compose Destinations)
-2) Introduction Session screen (input-first)
-3) Practice Session screens (4 task types)
-4) Transfer Session screen
-5) Daily session flow + progress tracking
-
-### Phase 4: Validation & Polish (Weeks 13-15)
-1) PAT execution on real users
-2) STT accuracy tuning + threshold A/B testing
-3) Performance profiling
-4) Beta release
+| Риск | Влияние | Способ снижения |
+| :--- | :--- | | |
+| Излишняя сложность (overengineering) | Критическое | TDD как компас. Если тест пишется тяжело, архитектура переусложнена. Фокус на MVP. |
+| Плохая работа STT (распознавания) | Высокое | Настраиваемый порог уверенности. Fallback на текстовый ввод. Прогресс не должен блокироваться. |
+| Сборка фраз деградирует в угадывание | Высокое | Обязательное произнесение вслух после сборки. Динамические варианты ответов. |
+| Выгорание при разработке в одиночку | Критическое | Жесткие рамки по времени для каждой фазы. Никакого разрастания функционала (feature creep) до релиза MVP. |
 
 ---
 
-## 8. РИСКИ И МИТИГАЦИЯ
+## 9. Критерии готовности (Definition of Done)
 
-| Риск | Вероятность | Влияние | Митигация |
-| :--- | :--- | :--- | :--- |
-| Overengineering убьет темп | High | Critical | TDD как компас. PAT как validation. Если тест пишется тяжело — архитектура неверна. |
-| STT работает плохо | Medium | High | Confidence threshold настраиваемый. Fallback на typing. Не блокировать прогресс. |
-| Block Assembly деградирует в pattern matching | High | High | Обязательное произнесение после сборки. Динамические дистракторы. Interleaving с другими типами задач. |
-| FSRS не учитывает семантическую связь | Medium | Medium | Context Variation Layer поверх FSRS. Decoupled от базового алгоритма. |
-| Pedagogical Acceptance Tests расходятся с реальностью | Medium | High | Регулярная калибровка PAT на beta-тестерах. PAT != unit tests. |
-| Burnout solo dev | High | Critical | Fixed scope per phase. No feature creep. MVP first. |
-
----
-
-## 9. DEFINITION OF DONE (Для каждого модуля)
-
-1) Unit tests written FIRST (TDD Red-Green-Refactor)
-2) >= 90% branch coverage для Domain Layer
-3) No Android imports в Domain modules
-4) All public APIs documented (KDoc)
-5) Detekt/Ktlint clean
-6) Value Objects used instead of primitives
-7) Error handling via Result type
-8) Contract Tests pass for all Infrastructure ports
-9) Pedagogical Acceptance Tests defined and passing
-10) Reviewed against SOLID checklist
-11) Two Bounded Contexts respected (no cross-contamination)
+Для каждого модуля:
+1. Тесты написаны до продакшн-кода (TDD).
+2. Покрытие ветвлений (branch coverage) в домене не менее 90%.
+3. В модулях Domain нет импортов из `android.*`.
+4. Все публичные API документированы через KDoc.
+5. Код проходит проверку Detekt и Ktlint без предупреждений.
+6. Используются Value Objects вместо примитивов (например, `PhraseCanonical` вместо `String`).
+7. Обработка ошибок через тип `Result`.
+8. Контрактные тесты для всех портов инфраструктуры проходят успешно.
+9. Соблюдено разделение на лингвистический и педагогический модули.
